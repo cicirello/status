@@ -2,7 +2,7 @@ name: bibliometrics
 
 on:
   schedule:
-    - cron: '42 8 8,18,28 * *'
+    - cron: '42 8 14,28 * *'
   workflow_dispatch:
 
 jobs:
