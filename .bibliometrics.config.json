@@ -2,7 +2,7 @@
     "jsonOutputFile": "bibliometrics.json",
     "svgConfig": [
         {
-            "background": "#010409",
+            "background": "#0d1117",
             "border": "rgba(56,139,253,0.4)",
             "filename": "images/bibliometrics2.svg",
             "text": "#c9d1d9",
