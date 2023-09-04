@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
       
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Generate the user stats image for personal website
       uses: cicirello/user-statistician@v1
