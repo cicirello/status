@@ -25,6 +25,7 @@ jobs:
         python3 -m bibliometrics
       env:
         SCHOLAR_ID: ${{ secrets.SCHOLAR_ID }}
+        USER_AGENT_BIB: ${{ secrets.USER_AGENT_BIB }}
 
     - name: Commit and push the bibliometrics SVGs and JSON
       run: |
