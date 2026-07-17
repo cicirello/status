@@ -6,7 +6,7 @@ on:
   # Optional: Automatically monitors your token budget periodically
 
 jobs:
-  check-limits:
+  count-langs:
     runs-on: ubuntu-latest
     permissions:
       contents: read # Minimum required permission to check limits
