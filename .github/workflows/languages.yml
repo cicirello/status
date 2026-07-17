@@ -1,0 +1,37 @@
+name: Find max number of languages in one repository
+
+on:
+  # Allows you to trigger this check manually via the Actions UI
+  workflow_dispatch:
+  # Optional: Automatically monitors your token budget periodically
+
+jobs:
+  check-limits:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # Minimum required permission to check limits
+    
+    steps:
+      - name: Fetch Live GraphQL & REST Limits
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api graphql -f query='
+          query {
+            user(login: "cicirello") {
+              repositories(first: 100, isFork: false) {
+                nodes {
+                  name
+                  languages(first: 100) {
+                  totalCount
+                }
+              }
+              pageInfo {
+               hasNextPage
+               endCursor
+              }
+            }
+          }
+          }' | jq '.data.user.repositories.nodes | max_by(.languages.totalCount) | {repository: .name, max_languages: .languages.totalCount}'
+
+         
