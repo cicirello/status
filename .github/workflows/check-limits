@@ -1,0 +1,56 @@
+name: Check GITHUB_TOKEN API Budget
+
+on:
+  # Allows you to trigger this check manually via the Actions UI
+  workflow_dispatch:
+  # Optional: Automatically monitors your token budget periodically
+
+jobs:
+  check-limits:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # Minimum required permission to check limits
+    
+    steps:
+      - name: Fetch Live GraphQL & REST Limits
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "=== Fetching API Quotas ==="
+          
+          # Fetch the raw JSON payload using the integrated gh CLI
+          RAW_LIMITS=$(gh api rate_limit)
+          
+          # Extract REST variables
+          REST_LIMIT=$(echo "$RAW_LIMITS" | jq '.resources.core.limit')
+          REST_REMAINING=$(echo "$RAW_LIMITS" | jq '.resources.core.remaining')
+          REST_RESET=$(echo "$RAW_LIMITS" | jq '.resources.core.reset')
+          
+          # Extract GraphQL variables
+          GRAPH_LIMIT=$(echo "$RAW_LIMITS" | jq '.resources.graphql.limit')
+          GRAPH_REMAINING=$(echo "$RAW_LIMITS" | jq '.resources.graphql.remaining')
+          GRAPH_RESET=$(echo "$RAW_LIMITS" | jq '.resources.graphql.reset')
+
+          # Convert epoch timestamps to human-readable strings
+          REST_RESET_TIME=$(date -d @"$REST_RESET" --utc +"%Y-%m-%d %H:%M:%S UTC")
+          GRAPH_RESET_TIME=$(date -d @"$GRAPH_RESET" --utc +"%Y-%m-%d %H:%M:%S UTC")
+
+          # Output clean data to the runner log
+          echo "REST API Remaining: $REST_REMAINING / $REST_LIMIT (Resets at: $REST_RESET_TIME)"
+          echo "GraphQL API Remaining: $GRAPH_REMAINING / $GRAPH_LIMIT (Resets at: $GRAPH_RESET_TIME)"
+
+          # Generate a Markdown Step Summary inside GitHub UI
+          echo "## 📊 GitHub API Rate Limit Diagnostic" >> $GITHUB_STEP_SUMMARY
+          echo "Generated from workflow run context using the standard \`GITHUB_TOKEN\`." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| API Type | Remaining Points / Requests | Total Hourly Limit | Reset Time (UTC) |" >> $GITHUB_STEP_SUMMARY
+          echo "| --- | --- | --- | --- |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔹 **GraphQL** | $GRAPH_REMAINING | $GRAPH_LIMIT | \`$GRAPH_RESET_TIME\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔸 **REST (Core)** | $REST_REMAINING | $REST_LIMIT | \`$REST_RESET_TIME\` |" >> $GITHUB_STEP_SUMMARY
+          
+          # Inject a hard fail if the GraphQL pool is completely exhausted to protect downstream steps
+          if [ "$GRAPH_REMAINING" -eq 0 ]; then
+            echo "❌ GraphQL budget is fully exhausted! Downstream steps using GraphQL will fail." >> $GITHUB_STEP_SUMMARY
+            echo "ERROR: Zero GraphQL points remaining."
+            exit 1
+          fi
